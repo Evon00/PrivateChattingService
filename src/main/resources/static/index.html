@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend API & WebSocket Test</title>
+</head>
+<body>
+<h1>Backend API & WebSocket Test</h1>
+
+<!-- 백엔드 API 호출 -->
+<h2>Backend API Test</h2>
+<button onclick="createRoom()">Create Room</button>
+<button onclick="checkSession()">Check Session</button>
+<button onclick="findSession()">Find Session</button>
+<div id="apiResult"></div>
+
+<!-- 웹소켓 연결 -->
+<h2>WebSocket Test</h2>
+<div id="messageArea"></div>
+<form id="messageForm">
+    <input type="text" id="messageInput" placeholder="Enter message">
+    <button type="submit">Send</button>
+</form>
+
+<script>
+    async function createRoom() {
+        const response = await fetch('http://localhost:8080/api/v1/chat/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                // 필요한 요청 파라미터들을 전달할 수 있습니다.
+            })
+        });
+        const data = await response.json();
+        document.getElementById('apiResult').innerText = JSON.stringify(data);
+    }
+
+    async function checkSession() {
+        const username = prompt('Enter username:');
+        const response = await fetch(`http://localhost:8080/api/v1/chat/session?username=${username}`);
+        const data = await response.json();
+        document.getElementById('apiResult').innerText = JSON.stringify(data);
+    }
+
+    async function findSession() {
+        const roomId = prompt('Enter room ID:');
+        const response = await fetch(`http://localhost:8080/api/v1/chat/find-session?roomId=${roomId}`);
+        const data = await response.json();
+        document.getElementById('apiResult').innerText = JSON.stringify(data);
+    }
+
+    const roomId = prompt('Enter room ID:');
+    const userId = prompt('Enter user ID:');
+
+    const socket = new WebSocket(`ws://localhost:8080/ws/chat/${userId}`);
+
+    socket.onopen = () => {
+        console.log('WebSocket connection established');
+    };
+
+    socket.onmessage = (event) => {
+        const messageArea = document.getElementById('messageArea');
+        messageArea.innerHTML += `<div>${event.data}</div>`;
+    };
+
+    socket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
+
+    socket.onclose = () => {
+        console.log('WebSocket connection closed');
+    };
+
+    const messageForm = document.getElementById('messageForm');
+    messageForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const messageInput = document.getElementById('messageInput');
+        const message = messageInput.value.trim();
+        if (message) {
+            const messageData = {
+                chatRoom: roomId,
+                from: userId,
+                message: message,
+                createdAt: new Date().toISOString(),
+                messageType: "CHAT", // 메시지 타입에 맞게 설정
+                subjectId: null // 필요에 따라 설정
+            };
+            socket.send(JSON.stringify(messageData));
+            messageInput.value = '';
+        }
+    });
+
+</script>
+</body>
+</html></html>

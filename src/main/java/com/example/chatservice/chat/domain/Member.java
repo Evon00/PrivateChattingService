@@ -1,5 +1,6 @@
 package com.example.chatservice.chat.domain;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 

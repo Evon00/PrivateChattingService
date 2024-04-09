@@ -2,16 +2,18 @@ package com.example.chatservice.chat.Service;
 
 import com.example.chatservice.chat.domain.ChatRoom;
 import com.example.chatservice.chat.domain.Member;
+import com.example.chatservice.chat.domain.MessageType;
 import com.example.chatservice.chat.dto.ChatRoomRequestDTO;
+import com.example.chatservice.chat.dto.ChatRoomResponseDTO;
+import com.example.chatservice.chat.dto.MessageRequestDTO;
 import com.example.chatservice.chat.repository.ChatRoomRepository;
 import com.example.chatservice.chat.domain.RoomType;
-import com.example.chatservice.chat.dto.MessageRequestDTO;
 import com.example.chatservice.chat.repository.MemberRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
@@ -65,17 +67,18 @@ public class ChatService {
         // chatRoom 도메인에 사용자 추가 과정
 
         //원래는 이렇게 찾아야함
-        /*
+
+        Set<WebSocketSession> sessions = new HashSet<>();
         for(Member member : save.getMembers()){
-            sessionManager.getSession(member.getUsername());
+            sessions.add(sessionManager.getSession(member.getUsername()));
         }
-        */
+
         //
 
         //테스트 버전 -> 현재 웹 소켓 세션에서 정보 가져올때 사용자 정보를 못가져와서...
-        WebSocketSession test1 = sessionManager.getSession("test1");
-        Set<WebSocketSession> sessions = new HashSet<>();
-        sessions.add(test1);
+        //WebSocketSession test1 = sessionManager.getSession("test1");
+        //Set<WebSocketSession> sessions = new HashSet<>();
+        //sessions.add(test1);
         //테스트 버전
 
         chatRooms.put(save.getId(), sessions);
@@ -92,19 +95,36 @@ public class ChatService {
         return room.get();
     }
 
-    public List<ChatRoom> findAllRoom(){
-        return chatRoomRepository.findAll();
-    }
+    public List<ChatRoomResponseDTO> findAllRoom(){
+        List<ChatRoomResponseDTO> response = new ArrayList<>(); // 비어 있는 리스트로 초기화
 
+        List<ChatRoom> chatRoomList = chatRoomRepository.findAll();
+        // 각 ChatRoom을 ChatRoomResponseDTO로 변환하여 response 리스트에 추가
+        chatRoomList.forEach(chatRoom -> response.add(new ChatRoomResponseDTO(
+                chatRoom.getId(),
+                chatRoom.getName(),
+                chatRoom.getCount(),
+                chatRoom.getMembers()
+        )));
+
+        return response;
+    }
 
     //채팅방에 있는 세션들에게 전부 메시지 전송
     //웹 소켓은 언제 사라지는지? 사라졌으면 다시 어떻게 해야하는지?
-    public void sendMessage(Long roomId, MessageRequestDTO message) throws IOException {
+    public void sendMessage(WebSocketMessage<?> message) throws IOException {
 
-        Set<WebSocketSession> sessions = chatRooms.getOrDefault(roomId, Collections.emptySet());
-        for(WebSocketSession session : sessions){
-            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(message)));
+        Object payload = message.getPayload();
+        MessageRequestDTO messageDTO = objectMapper.readValue(payload.toString(),MessageRequestDTO.class);
+        Set<WebSocketSession> sessions = chatRooms.getOrDefault(messageDTO.chatRoom(), Collections.emptySet());
+
+
+        if(messageDTO.messageType().equals(MessageType.CHAT)){
+            for(WebSocketSession session : sessions){
+                session.sendMessage(new TextMessage(objectMapper.writeValueAsString(message)));
+            }
         }
+
     }
 
 }

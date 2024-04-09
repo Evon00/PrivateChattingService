@@ -3,8 +3,11 @@ package com.example.chatservice.chat.controller;
 import com.example.chatservice.chat.Service.ChatService;
 import com.example.chatservice.chat.Service.SessionManager;
 import com.example.chatservice.chat.dto.ChatRoomRequestDTO;
+import com.example.chatservice.chat.dto.ChatRoomResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -33,4 +36,11 @@ public class ChatController {
         chatService.testSearch(roomId);
         //사용자가 로그인에 성공하면 특정 URI로 소켓 연결 시도 -> 해당 소켓은 로그아웃할때 까지 계속 지속
     }
+
+    //무한 참조 일어남 고쳐야함
+    @GetMapping("/list")
+    public List<ChatRoomResponseDTO> getChatList(){
+        return chatService.findAllRoom();
+    }
+
 }
