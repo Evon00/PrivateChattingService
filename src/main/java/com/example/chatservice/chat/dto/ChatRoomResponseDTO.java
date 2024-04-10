@@ -1,9 +1,12 @@
 package com.example.chatservice.chat.dto;
 
+import java.util.List;
+
 public record ChatRoomResponseDTO(
         Long roomId,
         String name,
         int count,
-        java.util.Set<com.example.chatservice.chat.domain.Member> members
+
+        List<String> members
 ) {
 }

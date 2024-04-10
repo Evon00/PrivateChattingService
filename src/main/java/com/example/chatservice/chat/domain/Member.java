@@ -19,8 +19,8 @@ public class Member {
 
     private String name;
 
-    @ManyToMany(mappedBy = "members")
-    private Set<ChatRoom> chatRooms = new HashSet<>();
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    private Set<MemberChatRoom> chatRooms = new HashSet<>();
 
 
 }

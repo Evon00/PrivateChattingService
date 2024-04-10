@@ -28,11 +28,8 @@ public class ChatRoom {
     @Column
     private int count;
 
-    @ManyToMany
-    @JoinTable(name = "member_chat_room",
-            joinColumns = @JoinColumn(name = "chat_room_id"),
-            inverseJoinColumns = @JoinColumn(name = "member_id"))
-    private Set<Member> members = new HashSet<>();
+    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL)
+    private Set<MemberChatRoom> members = new HashSet<>();
 
     @Builder
     public ChatRoom(String name, RoomType roomType, int count){
@@ -41,8 +38,13 @@ public class ChatRoom {
         this.count = count;
     }
 
-    public void setMembers(Set<Member> members){
+    public void setMembers(Set<MemberChatRoom> members){
         this.members = members;
     }
 
+    /*
+    public void setMembers(Set<Member> members){
+        this.members = members;
+    }
+    */
 }
