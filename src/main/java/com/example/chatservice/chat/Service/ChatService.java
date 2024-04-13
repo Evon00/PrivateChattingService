@@ -6,6 +6,7 @@ import com.example.chatservice.chat.dto.ChatRoomResponseDTO;
 import com.example.chatservice.chat.dto.MessageRequestDTO;
 import com.example.chatservice.chat.repository.ChatRoomRepository;
 import com.example.chatservice.chat.repository.MemberRepository;
+import com.example.chatservice.chat.repository.MessageRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,8 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final MemberRepository memberRepository;
     private final SessionManager sessionManager;
+    private final MessageRepository messageRepository;
+    private final OfflineChatService offlineChatService;
     private final ObjectMapper objectMapper;
 
 
@@ -100,23 +103,27 @@ public class ChatService {
     // 세션이 있는 경우 정상 작동, 세션이 없는 경우 임시 메시지 저장소로 전송
     public void sendMessage(WebSocketMessage<?> message) throws IOException {
 
+        //메시지 객체 변환
         Object payload = message.getPayload();
         MessageRequestDTO messageDTO = objectMapper.readValue(payload.toString(),MessageRequestDTO.class);
-        Optional<ChatRoom> chatRoom = chatRoomRepository.findById(messageDTO.chatRoom());
+        //메시지 객체 변환
 
-        Set<Member> members = null;//chatRoom.get().getMembers();
+        //메시지 내용중 채팅방 번호 확인 및 사용자 검색
+        Optional<ChatRoom> chatRoom = chatRoomRepository.findById(messageDTO.chatRoom());
+        Set<MemberChatRoom> memberChatRoomSet = chatRoom.get().getMembers();
+        //메시지 내용중 채팅방 번호 확인 및 사용자 검색
 
         if(messageDTO.messageType().equals(MessageType.CHAT)){
-            if(!members.isEmpty()){
-                for(Member member : members){
-                    WebSocketSession session = sessionManager.getSession(member.getUsername());
+                for(MemberChatRoom member : memberChatRoomSet){
+                    WebSocketSession session = sessionManager.getSession(member.getMember().getUsername());
                     if(session == null){ //현재 채팅방에는 사람이 있으나, 세션이 없는 경우 = 로그아웃 , 메시지 임시 저장소에 저장
-
+                        offlineChatService.saveOfflineMessage(member.getMember().getUsername(), messageDTO);
+                        System.out.println("해당 사용자 로그아웃상태라 redis에 저장해둘게요");
                     } else { //현재 채팅방에 있고, 세션이 있는 경우 = 로그인 , 메시지 전송
-                        session.sendMessage(new TextMessage(objectMapper.writeValueAsString(message)));
+                        TextMessage textMessage = new TextMessage(objectMapper.writeValueAsString(messageDTO));
+                        session.sendMessage(new TextMessage(objectMapper.writeValueAsString(textMessage)));
                     }
                 }
-            }
         }
     }
 }

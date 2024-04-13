@@ -59,11 +59,36 @@
 
     socket.onopen = () => {
         console.log('WebSocket connection established');
+        document.getElementById('apiResult').innerText = `WebSocket connection established. User ID: ${userId}`;
+
     };
 
+    const chatRooms = {};
     socket.onmessage = (event) => {
-        const messageArea = document.getElementById('messageArea');
-        messageArea.innerHTML += `<div>${event.data}</div>`;
+        const data = JSON.parse(event.data); // 수신된 메시지를 JSON 객체로 파싱
+        const chatRoom = data.chatRoom; // chatRoom 필드의 값
+
+        // 해당 채팅방 번호에 대한 메시지 영역이 없으면 생성
+        if (!chatRooms[chatRoom]) {
+            // 새로운 채팅방 영역 생성
+            const chatRoomDiv = document.createElement('div');
+            chatRoomDiv.id = `chatRoom_${chatRoom}`;
+            document.body.appendChild(chatRoomDiv); // 원하는 부모 요소에 추가하도록 수정 가능
+
+            // 해당 채팅방 영역에 채팅방 번호 추가
+            chatRoomDiv.innerHTML += `<h3>${chatRoom}번방</h3>`;
+
+            // 해당 채팅방 번호에 대한 메시지 영역 생성 및 추가
+            const messageAreaDiv = document.createElement('div');
+            messageAreaDiv.id = `messageArea_${chatRoom}`;
+            chatRoomDiv.appendChild(messageAreaDiv);
+
+            // chatRooms 객체에 채팅방 번호에 해당하는 메시지 영역을 저장
+            chatRooms[chatRoom] = messageAreaDiv;
+        }
+
+        // 해당 채팅방 번호의 메시지 영역에 새로운 메시지 추가
+        chatRooms[chatRoom].innerHTML += `<div>${data.from} : ${data.message} / ${data.createdAt}</div>`;
     };
 
     socket.onerror = (error) => {
@@ -95,4 +120,4 @@
 
 </script>
 </body>
-</html></html>
+</html>

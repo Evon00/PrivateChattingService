@@ -28,7 +28,7 @@ public class ChatRoom {
     @Column
     private int count;
 
-    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Set<MemberChatRoom> members = new HashSet<>();
 
     @Builder
@@ -42,9 +42,4 @@ public class ChatRoom {
         this.members = members;
     }
 
-    /*
-    public void setMembers(Set<Member> members){
-        this.members = members;
-    }
-    */
 }
